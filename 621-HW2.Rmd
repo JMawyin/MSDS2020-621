@@ -1,0 +1,91 @@
+---
+title: "621 - HW2"
+author: "Jose Mawyin"
+date: "3/14/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pROC)
+```
+
+## 621 - HW2
+
+###Data 
+
+```{r}
+data <- read.csv("/Users/josemawyin/Library/Mobile Documents/com~apple~CloudDocs/Data Science Masters /621/classification-output-data.csv")
+head(data)
+str(data)
+```
+
+###Confusion Matrix
+
+```{r}
+t.confu.matr <- table(data$class,data$scored.class)
+t.confu.matr
+TP <- t.confu.matr[1,1]
+FP <- t.confu.matr[1,2]
+FN <- t.confu.matr[2,1]
+TN <- t.confu.matr[2,2]
+cat("TP",TP,"\nFP",FP,"\nFN",FN,"\nTN",TN)
+```
+
+###Calculating Model Performance Parameters
+
+```{r}
+Accuracy <- (TP+TN)/(TP+FP+TN+FN)
+C.Error.Rate <- (FP+FN)/(TP+FP+TN+FN)
+Precision <- TP/(TP+FP)
+Sensitiviy <- TP/(TP+FN)
+Specificity <- TN/(TN+FP)
+F1.Score <- 2*Precision*Sensitiviy/(Precision+Sensitiviy)
+
+cat("Accuracy",Accuracy,"\nC.Error.Rate",C.Error.Rate,"\nPrecision",Precision,"\nSensitiviy",Sensitiviy,"\nSpecificity",Specificity,"\nF1.Score",F1.Score)
+```
+
+```{r}
+summary(data$scored.probability)
+```
+
+###Calculating ROC Data
+
+```{r}
+simple_roc <- function(labels, scores){
+  labels <- labels[order(scores, decreasing=TRUE)]
+  data.frame(TPR=cumsum(labels)/sum(labels), FPR=cumsum(!labels)/sum(!labels), labels)
+}
+ROC <- simple_roc(data$class, data$scored.probability)
+ROC
+```
+
+###Plotting ROC Curve and Calculating AUC
+
+```{r}
+plot(ROC$FPR, ROC$TPR)
+AUC <- mean(ROC$TPR)
+cat("The AUC is:", AUC)
+```
+
+###Using pROC to Plot ROC and Calculate AUC
+
+```{r}
+roc_obj <- roc(data$class, data$scored.probability,print.auc=TRUE)
+auc(roc_obj)
+plot.roc(data$class, data$scored.probability,
+main="Confidence interval of a threshold", percent=TRUE,
+ci=FALSE, of="thresholds",print.auc=TRUE)
+```
+
+###Using caret to Calculate Performance Parameters
+
+```{r}
+library(caret)
+data_f <- data
+data_f$class <- as.factor(data_f$class)
+data_f$scored.class <- as.factor(data_f$scored.class)
+confusionMatrix(data = data_f$class, reference = data_f$scored.class)
+```
+
+
